@@ -5,6 +5,7 @@ import requests
 
 import streamlit as st
 import pandas as pd 
+import os
 
 def fetch_image_bytes(url: str) -> bytes:
     """This function fetches image bytes from url.
@@ -62,7 +63,7 @@ def start_sidebar() -> tuple[str, int, str]:
 
         # Add a text box for Video folder
         c3 ,c4 = st.columns(2)
-        video_folder = c3.text_input("Video folder", value="", placeholder="e.g L01/V006")
+        video_folder = c3.text_input("Video folder", value="", placeholder="e.g L01_V006")
 
         # Add a text box for Image file
         image_file = c4.text_input("Image file", value="", placeholder="e.g 001")
@@ -103,18 +104,29 @@ def get_edited_result(query, model_choice, k = 100, image_file = "", video_folde
     video_names=[]
     frame_idxs=[]
  
-    for result in img_result:
+    for result in img_result['search_result']:
       video_name,frame_idx=map_keyframe(result['video_name'],result['keyframe_id'])
       video_names.append(video_name)
       frame_idxs.append(frame_idx)
     
 
-    frame_idx = int(image_file)
+    frame_id = int(image_file)
+    print(frame_id)
 
     #Lay 5 hinh ke tu idx 
+    keyframe_dir = "./KeyFrames"
 
+
+       
+   
+    
     for i in range(5): 
-        video_name,frame_idx=map_keyframe(video_folder ,frame_idx + i)
+        Vid_id = video_folder[:3]
+        keyframeDir = "keyframes_"+ keyframeDir
+        video_folder = os.path.join(keyframe_dir, video_folder)
+        if ((frame_id + i)> len(os.listdir(video_folder)) ): 
+            break
+        video_name,frame_idx=map_keyframe(video_folder ,frame_id + i)
 
         video_names[i]=video_name
         frame_idxs[i]= frame_idx
@@ -125,13 +137,18 @@ def get_edited_result(query, model_choice, k = 100, image_file = "", video_folde
     dic={'vd_name':video_names,'fr_id':frame_idxs}
     df=pd.DataFrame(dic)
 
-    csv = df.to_csv('query-final.csv', index = None, header=False,sep=" ")
+    csv = df.to_csv( index = None, header=False , sep=" ").encode('utf-8')
 
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="query-final.csv">Download CSV</a>'
-    return href
+    st.download_button(
+            "Press to Download",
+            csv,
+            "file.csv",
+            "text/csv",
+            key='download-csv'
+            )
 
-    
+
+
 
 
 
@@ -169,15 +186,22 @@ def generate_csv(query, model_choice, k =100):
       frame_idxs.append(frame_idx)
     dic={'vd_name':video_names,'fr_id':frame_idxs}
     df=pd.DataFrame(dic)
-    csv = df.to_csv('query-final.csv', index = None, header=False,sep=" ")
 
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="query-final.csv">Download CSV</a>'
-    return href
+    csv = df.to_csv( index = None, header=False , sep=" ").encode('utf-8')
+
+    st.download_button(
+            "Press to Download",
+            csv,
+            "file.csv",
+            "text/csv",
+            key='download-csv'
+            )
+
 
 
 def map_keyframe(video_name,key_frame_id):
   PATH_TO_FILE_MAP='./map-keyframes/'
   df=pd.read_csv(PATH_TO_FILE_MAP+video_name+'.csv')
+  
   return video_name+',',df.frame_idx[key_frame_id-1]
 

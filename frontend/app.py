@@ -25,7 +25,7 @@ def read_image(results: List[dict]) -> List[Image.Image]:
         video_name = res["video_name"]
 
         keyframeDir = video_name[:3]
-        keyframeDir = "Keyframes_"+ keyframeDir
+        keyframeDir = "keyframes_"+ keyframeDir
         keyframe_id = res["keyframe_id"]
         keyframe_id= int(keyframe_id)
         video_folder = os.path.join(IMAGE_KEYFRAME_PATH, keyframeDir,  video_name)
