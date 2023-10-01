@@ -9,6 +9,7 @@ import pandas as pd
 from PIL import Image
 
 from api.utils import load_model, index_to_url
+import open_clip
 
 
 
@@ -65,11 +66,16 @@ class SemanticSearcher:
     index : faiss.Index, optional
         Faiss index with embeddings to search, by default None
     """
+    #def__init__(self, model_id: str, pretrain: str, index: faiss.Index=None, db: list=[])-> None:
+        #self.model,_, self.preprocess = open_clip.create_model_and_transforms(self.model_id, pretrained=self.pretrain,device=self.device)
+    
+
     def __init__(self, model_id: str, index: faiss.Index=None, db: list=[]) -> None:
         self.model, self.processor = load_model(model_id)
         self.index = index
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.database = db
+
 
     def process(self, batch: list[Union[Image.Image, str]]) -> np.array:
         """Process a batch of images or text to extract their embeddings
@@ -89,7 +95,16 @@ class SemanticSearcher:
         if mode=="visual":
             processed_images = self.processor(images=batch, return_tensors="pt").to(self.device)
             return self.model.get_image_features(**processed_images).detach().cpu().numpy()
+            #image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+
+            #with torch.no_grad(), torch.cuda.amp.autocast():
+              #image_features = self.model.encode_image(image_input)[0]
+              #image_features /= image_features.norm(dim=-1, keepdim=True)
         elif mode=="text":
+            #text_tokens= open_clip.tokenize().to(device)
+            #with torch.no_grad():
+            # text_features=  model.encode_text(text_tokens).float()
+            #text_features /= text_features.norm(dim=-1, keepdim=True)
             processed_text = self.processor(text=batch, return_tensors="pt", padding=True).to(self.device)
             return self.model.get_text_features(**processed_text).detach().cpu().numpy()
 
