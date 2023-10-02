@@ -68,23 +68,23 @@ def load_searcher() -> None:
     db14 = Database("./embeddings/clip_fea_L14_Tuan/")
     db14_336 = Database("./embeddings/clip_fea_L14_@336px_TUAN/")
     db14_H =  Database("./embeddings/clip_fea_H14_Laion2b_79K/")
-    #db14_G =  Database("./embeddings/clip_fea_ViT-bigG-14_laion160k/")
+    db14_G =  Database("./embeddings/clip_fea_H14_Laion2b_79K/")
     #load features into databases
     index_32 = faiss_indexing(db32, 512)
     index_14 = faiss_indexing(db14, 768)
     index_14_336 = faiss_indexing(db14_336 , 768)
     index_14_H= faiss_indexing(db14_H , 1024)
-    #index_14_G= faiss_indexing(db14_G , 1024)
+    index_14_G= faiss_indexing(db14_G , 1024)
     global searcher32
     global searcher14
     global searcher14336
     global searcher14H_La
-    #global searcher14G_La
+    global searcher14G_La
     searcher32 = SemanticSearcher("openai/clip-vit-base-patch32", index_32, db32)
     searcher14= SemanticSearcher("openai/clip-vit-large-patch14", index_14, db14)
     searcher14336= SemanticSearcher("openai/clip-vit-large-patch14-336", index_14_336, db14_336)
     searcher14H_La= SemanticSearcher("laion/CLIP-ViT-H-14-laion2B-s32B-b79K", index_14_H, db14_H)
-    #searcher14G_La= SemanticSearcher("laion/CLIP-ViT-bigG-14-laion2B-39B-b160k", index_14_G, db14_G)
+    searcher14G_La= SemanticSearcher("laion/CLIP-ViT-bigG-14-laion2B-39B-b160k", index_14_G, db14_G)
 
 
 @app.get("/")
@@ -115,8 +115,8 @@ def search(query_batch: Query) -> SearchResult:
         result = searcher14336(query, k)
     elif model == "ViT-H-14-laion2B-s32B-b79K":
         result = searcher14H_La(query, k)
-    #elif model == "ViT-bigG-14-laion2B-39B-b160k":
-        #result = searcher14G_La(query, k)
+    elif model == "ViT-bigG-14-laion2B-39B-b160k":
+        result = searcher14G_La(query, k)
     return SearchResult(search_result = result)
 
 
