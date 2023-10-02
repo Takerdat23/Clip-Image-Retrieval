@@ -7,14 +7,14 @@ WORKDIR /app
 # Copying necessary files and directories
 COPY ./frontend .
 
-COPY ./KeyFrames ./KeyFrames 
+#COPY ./KeyFrames ./KeyFrames 
 
 COPY ./map-keyframes ./map-keyframes
 
 # Installing dependencies
 RUN pip install -r ./requirements.txt
 
-RUN ./get_data.sh
+RUN python ./get_data.py
 
 # Exposing port 8501
 EXPOSE 8501

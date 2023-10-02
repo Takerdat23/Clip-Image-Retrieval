@@ -7,7 +7,7 @@ from PIL import Image
 import os 
 import json
 
-IMAGE_KEYFRAME_PATH='./KeyFrames/'+'keyframes_'
+IMAGE_KEYFRAME_PATH='./KeyFrames/'+'Keyframes_'
 
 
 
@@ -25,7 +25,7 @@ def read_image(results: List[dict]) -> List[Image.Image]:
         video_name = res["video_name"]
 
         keyframeDir = video_name[:3]
-        keyframeDir = "keyframes_"+ keyframeDir
+        keyframeDir = "Keyframes_"+ keyframeDir
         keyframe_id = res["keyframe_id"]
         keyframe_id= int(keyframe_id)
         video_folder = os.path.join(IMAGE_KEYFRAME_PATH, keyframeDir,  video_name)
