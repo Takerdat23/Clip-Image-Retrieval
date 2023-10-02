@@ -122,8 +122,8 @@ def get_edited_result(query, model_choice, k = 100, image_file = "", video_folde
     
     for i in range(5): 
         Vid_id = video_folder[:3]
-        keyframeDir = "keyframes_"+ keyframeDir
-        video_folder = os.path.join(keyframe_dir, video_folder)
+        video_folder_name = "keyframes_"+ Vid_id
+        video_folder = os.path.join(keyframe_dir, video_folder_name)
         if ((frame_id + i)> len(os.listdir(video_folder)) ): 
             break
         video_name,frame_idx=map_keyframe(video_folder ,frame_id + i)
