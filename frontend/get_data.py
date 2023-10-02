@@ -55,7 +55,7 @@ for file_info in files:
     file_name = file_info["name"]
 
     print(f"Downloading file: {file_name}")
-    gdown.download(f"https://drive.google.com/uc?id={file_id}", output=file_name, quiet=False)
+    gdown.download(f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t", output=file_name, quiet=False)
 
     print(f"Unzipping file: {file_name}")
     with zipfile.ZipFile(file_name, "r") as zip_ref:

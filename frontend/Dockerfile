@@ -14,6 +14,8 @@ COPY ./map-keyframes ./map-keyframes
 # Installing dependencies
 RUN pip install -r ./requirements.txt
 
+RUN pip install --upgrade --no-cache-dir gdown
+
 RUN python ./get_data.py
 
 # Exposing port 8501
