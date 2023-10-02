@@ -14,7 +14,7 @@ COPY ./map-keyframes ./map-keyframes
 # Installing dependencies
 RUN pip install -r ./requirements.txt
 
-RUN python ./get_data.py
+RUN ./get_data.sh
 
 # Exposing port 8501
 EXPOSE 8501
