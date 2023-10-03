@@ -11,12 +11,17 @@ COPY ./frontend .
 
 COPY ./map-keyframes ./map-keyframes
 
+# CMD ["ls", "-la"]
+
+# RUN mkdir -p ./KeyFrames
+
+# COPY  mlcv/Databases/HCM_AIC23/* ./KeyFrames
+
+
 # Installing dependencies
 RUN pip install -r ./requirements.txt
 
-RUN pip install --upgrade --no-cache-dir gdown
 
-RUN python ./get_data.py
 
 # Exposing port 8501
 EXPOSE 8501

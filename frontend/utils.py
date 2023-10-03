@@ -43,9 +43,9 @@ def start_sidebar() -> tuple[str, int, str]:
     with st.sidebar.container():
         c1, c2 = st.columns(2)
         mode = c1.radio("Query Mode", ["Text", "Image"])
-        k = c2.slider("Number of Images", min_value=1, max_value=20, step=1, value=10)
+        k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=10)
 
-        model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14", "ViT-L/14@336px","ViT-H-14-laion2B-s32B-b79K", "ViT-bigG-14-laion2B-39B-b160k" ])
+        model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14", "ViT-L/14@336px","ViT-g-14" "ViT-bigG-14" ])
 
 
         if mode == "Text":
@@ -62,25 +62,27 @@ def start_sidebar() -> tuple[str, int, str]:
         st.title("FOR COMPETITION PURPOSE")
 
         # Add a text box for Video folder
-        c3 ,c4 = st.columns(2)
+        c3 ,c4  = st.columns(2)
         video_folder = c3.text_input("Video folder", value="", placeholder="e.g L01_V006")
 
         # Add a text box for Image file
         image_file = c4.text_input("Image file", value="", placeholder="e.g 001")
 
-        if st.button("Get edited CSV"): 
-            st.write("Downloading CSV...")
-            download_link = get_edited_result(query, model_choice, 100, image_file, video_folder)
-            st.markdown(download_link, unsafe_allow_html=True)
-
-
-
+        
 
         # Add a button
-        if st.button("Print CSV"):
-            st.write("Downloading CSV...")
-            download_link = generate_csv(query, model_choice, 100)
-            st.markdown(download_link, unsafe_allow_html=True)
+        if st.button("Get session id"):
+            response = get_session_id("eloaic", "Rahphe8h")
+            st.json(response)
+
+        session_id = st.text_input("session_id", value= "", placeholder= "enter your session id here")
+   
+
+
+        if st.button("Submit"): 
+            response =  get_result(video_folder,image_file,session_id  )
+            st.json(response)
+         
 
         return query, k, model_choice
 def get_edited_result(query, model_choice, k = 100, image_file = "", video_folder= ""): 
@@ -149,6 +151,25 @@ def get_edited_result(query, model_choice, k = 100, image_file = "", video_folde
             )
 
 
+
+def get_session_id(account: str , password: str): 
+    """Send request to REST to get the session id."""
+    
+    url = "https://eventretrieval.one/api/v1/login  "
+    payload = {"username": account, "password": str}
+    response = requests.post(url, json=payload)
+    
+    return response.json()
+
+def get_result(VIDEO_ID: str , FRAME_ID: str , SESSION_ID: str):
+    url=  "https://eventretrieval.one/api/v1/submit"   
+    video_name,frame_idx=map_keyframe(VIDEO_ID ,FRAME_ID)
+    payload = {"item":video_name,
+    "frame": frame_idx,
+    "session": SESSION_ID}
+    response = requests.get(url, json=payload)
+
+    return response.json()
 
 
 

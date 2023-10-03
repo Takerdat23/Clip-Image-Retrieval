@@ -7,14 +7,20 @@ from PIL import Image
 import os 
 import json
 
-IMAGE_KEYFRAME_PATH='./KeyFrames/'+'Keyframes_'
+def extrac_name_file_img(key_fr_id,video_name):
+    if int(video_name[1:3])>=17:
+        l=3-len(key_fr_id)
+        return '0'*l+key_fr_id
+    else:
+        l=4-len(key_fr_id)
+        return '0'*l+key_fr_id
 
 
 
 def read_image(results: List[dict]) -> List[Image.Image]:
     images = []
     image_names = []
-    IMAGE_KEYFRAME_PATH = "./KeyFrames/"  # Đường dẫn đến thư mục chứa keyframes
+    IMAGE_KEYFRAME_PATH = "/mlcv/Databases/HCM_AIC23/"  # Đường dẫn đến thư mục chứa keyframes
     
        
 
@@ -23,30 +29,39 @@ def read_image(results: List[dict]) -> List[Image.Image]:
        
 
         video_name = res["video_name"]
+        if int(video_name[1:3])<=10:
+           video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-1','keyframes',video_name)
+        elif 10 < int(video_name[1:3]) <=20: 
+            video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-2','keyframes',video_name)
+        elif 20 < int(video_name[1:3]) <=36: 
+            video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-3','keyframes',video_name)
+        
+        img_name=extrac_name_file_img(str(res['keyframe_id']),res['video_name'])+'.jpg'
 
-        keyframeDir = video_name[:3]
-        keyframeDir = "Keyframes_"+ keyframeDir
-        keyframe_id = res["keyframe_id"]
-        keyframe_id= int(keyframe_id)
-        video_folder = os.path.join(IMAGE_KEYFRAME_PATH, keyframeDir,  video_name)
+        image_path = os.path.join(video_folder,img_name)
+        image = Image.open(image_path)
+
+        image_names.append( video_name + " "+ img_name)
+        images.append(image)
+
+        
+        # keyframe_id= int(keyframe_id)
+        
+        # if os.path.exists(video_folder):
+        #     image_files = sorted(os.listdir(video_folder))
 
 
+        #     if keyframe_id < len(image_files):
 
-        if os.path.exists(video_folder):
-            image_files = sorted(os.listdir(video_folder))
-
-
-            if keyframe_id < len(image_files):
-
-                image_file = image_files[keyframe_id]
-                image_path = os.path.join(video_folder, image_file)
+        #         image_file = image_files[keyframe_id]
+        #         image_path = os.path.join(video_folder, image_file)
           
-                image = Image.open(image_path)
+        #         image = Image.open(image_path)
 
-                image_names.append( video_name + " "+ image_file)
-                images.append(image)
-            else:
-                print(f"Keyframe id {keyframe_id} is out of range for video {video_name}.")
+        #         image_names.append( video_name + " "+ image_file)
+        #         images.append(image)
+        #     else:
+        #         print(f"Keyframe id {keyframe_id} is out of range for video {video_name}.")
 
     return images, image_names
 

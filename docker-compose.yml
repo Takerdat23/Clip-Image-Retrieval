@@ -13,6 +13,7 @@ services:
       - 8000:8000
     volumes:
       - ./api:/app/api
+      - /mlcv:/mlcv
     networks:
       - project_network
   frontend:
@@ -29,6 +30,7 @@ services:
       - 8501:8501
     volumes:
       - ./frontend:/app/frontend
+      - /mlcv:/mlcv
     depends_on:
       - backend-api
     networks:
