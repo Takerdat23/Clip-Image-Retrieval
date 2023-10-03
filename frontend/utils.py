@@ -43,7 +43,7 @@ def start_sidebar() -> tuple[str, int, str]:
     with st.sidebar.container():
         c1, c2 = st.columns(2)
         mode = c1.radio("Query Mode", ["Text", "Image"])
-        k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=10)
+        k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=20)
 
         model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14", "ViT-L/14@336px","ViT-g-14" "ViT-bigG-14" ])
 
@@ -60,6 +60,12 @@ def start_sidebar() -> tuple[str, int, str]:
         
 
         st.title("FOR COMPETITION PURPOSE")
+        # Add a button
+        if st.button("Get session id"):
+            response = get_session_id("eloaic", "Rahphe8h")
+            st.json(response)
+
+        session_id = st.text_input("session_id", value= "", placeholder= "enter your session id here")
 
         # Add a text box for Video folder
         c3 ,c4  = st.columns(2)
@@ -70,12 +76,7 @@ def start_sidebar() -> tuple[str, int, str]:
 
         
 
-        # Add a button
-        if st.button("Get session id"):
-            response = get_session_id("eloaic", "Rahphe8h")
-            st.json(response)
-
-        session_id = st.text_input("session_id", value= "", placeholder= "enter your session id here")
+        
    
 
 
@@ -157,16 +158,18 @@ def get_session_id(account: str , password: str):
     
     url = "https://eventretrieval.one/api/v1/login  "
     payload = {"username": account, "password": str}
-    response = requests.post(url, json=payload)
+    requests.post(url, json=payload)
     
-    return response.json()
+    
 
 def get_result(VIDEO_ID: str , FRAME_ID: str , SESSION_ID: str):
     url=  "https://eventretrieval.one/api/v1/submit"   
     video_name,frame_idx=map_keyframe(VIDEO_ID ,FRAME_ID)
-    payload = {"item":video_name,
-    "frame": frame_idx,
-    "session": SESSION_ID}
+    payload = {
+        "item":video_name,
+        "frame": frame_idx,
+        "session": SESSION_ID
+    }
     response = requests.get(url, json=payload)
 
     return response.json()

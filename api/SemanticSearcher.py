@@ -12,47 +12,83 @@ from api.utils import load_model, index_to_url
 import open_clip
 
 
+class TextEmbedding():
+    def __init__(self,model_name,pretrain):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrain,device=self.device)
+        self.model.eval()
+    def __call__(self, text: str,model_name) -> np.ndarray:
+        tokenizer = open_clip.get_tokenizer(model_name)
+        text = tokenizer([text]).to(self.device)
 
 
-def Faiss_search_engine(query: str, db: list, indexing:faiss.IndexFlatL2 , topK: int):
-  index = faiss.IndexFlatL2(1024)
-  text_tokens = clip.tokenize(query).to(device)
-  with torch.no_grad():
-    text_features = model.encode_text(text_tokens).float()
+        with torch.no_grad(), torch.cuda.amp.autocast():
+            text_features = self.model.encode_text(text)[0]
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+        return text_features.detach().cpu().numpy()
+    
+class searchForOpenClip:
+    """Object that performs semantic search on images and text
+
+    Parameters
+    ----------
+    model_id : str
+        open clip model 
+    pretrain :str 
+        open clip pretrain
+    index : faiss.Index, optional
+        Faiss index with embeddings to search, by default None
+    """
+    def __init__(self, model_id: str, pretrain: str , index: faiss.Index=None, db: list=[]) -> None:
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_id, pretrained=pretrain,device=self.device)
+        self.model.eval()
+        self.index = index
+        self.database = db
+    def __call__(self, text: str,model_name: str , k : int ) -> np.ndarray:
+        """ Encode the text query
+        model_id : str
+            open clip model 
+        text : str 
+            text query
+        k: int 
+            k result
+
+        """
+
+        tokenizer = open_clip.get_tokenizer(model_name)
+        text = tokenizer([text]).to(self.device)
 
 
-  text_features /= np.linalg.norm(text_features)
-  # perform the search
-  measure = indexing.search(text_features, topK)
-  #tuple of two arrays distance , index
+        with torch.no_grad(), torch.cuda.amp.autocast():
+            text_features = self.model.encode_text(text)[0]
+            text_features /= text_features.norm(dim=-1, keepdim=True)
 
-  measure  = np.reshape(np.array(measure), newshape=(2, topK)).T
+        query_emb= text_features.detach().cpu().numpy()
+    
 
-  print(measure.shape)
+        _, I = self.index.search(query_emb, k)
+        I = I.tolist()
 
-  '''Sắp xếp kết quả'''
+        measure = self.index.search(query_emb, k)
+        #tuple of two arrays distance , index
 
+        measure  = np.reshape(np.array(measure), newshape=(2, k)).T
+        # sort the result
+        sorted_indices = np.argsort(measure[:, 0])
+        measure  = measure[sorted_indices]
 
-  sorted_indices = np.argsort(measure[:, 0])
+        '''Trả về top K kết quả'''
+        search_result = []
+        for instance in measure:
+            distance, ins_id = instance
+            ins_id = int(ins_id)
+            video_name, idx = self.database[ins_id][0], self.database[ins_id][1]
 
-
-  measure  = measure[sorted_indices]
-
-  '''Trả về top K kết quả'''
-  search_result = []
-  for instance in measure:
-      distance, ins_id = instance
-      ins_id = int(ins_id)
-      video_name, idx = db[ins_id][0], db[ins_id][1]
-
-      search_result.append({"video_name": video_name,
-                            "keyframe_id": idx,
-                            "score": distance})
-
-
-  return search_result
-
-
+            search_result.append({"video_name": video_name,
+                                  "keyframe_id": idx,
+                                  "score": distance})
+        return search_result
 
 
 
@@ -66,6 +102,7 @@ class SemanticSearcher:
     index : faiss.Index, optional
         Faiss index with embeddings to search, by default None
     """
+
     #def__init__(self, model_id: str, pretrain: str, index: faiss.Index=None, db: list=[])-> None:
         #self.model,_, self.preprocess = open_clip.create_model_and_transforms(self.model_id, pretrained=self.pretrain,device=self.device)
     
