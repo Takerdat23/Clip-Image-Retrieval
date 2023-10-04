@@ -61,11 +61,12 @@ def start_sidebar() -> tuple[str, int, str]:
 
         st.title("FOR COMPETITION PURPOSE")
         # Add a button
-        if st.button("Get session id"):
-            response = get_session_id("eloaic", "Rahphe8h")
-            st.json(response)
-
-        session_id = st.text_input("session_id", value= "", placeholder= "enter your session id here")
+      
+        
+      
+         
+    
+        session_id_text = st.text_input("session_id", value=get_session_id("eloaic", "Rahphe8h")['sessionId'] , placeholder= "enter your session id here")
 
         # Add a text box for Video folder
         c3 ,c4  = st.columns(2)
@@ -81,7 +82,7 @@ def start_sidebar() -> tuple[str, int, str]:
 
 
         if st.button("Submit"): 
-            response =  get_result(video_folder,image_file,session_id  )
+            response =  get_result(video_folder,int(image_file),session_id_text  )
             st.json(response)
          
 
@@ -156,9 +157,10 @@ def get_edited_result(query, model_choice, k = 100, image_file = "", video_folde
 def get_session_id(account: str , password: str): 
     """Send request to REST to get the session id."""
     
-    url = "https://eventretrieval.one/api/v1/login  "
-    payload = {"username": account, "password": str}
-    requests.post(url, json=payload)
+    url = "https://eventretrieval.one/api/v1/login"
+    payload = {"username": account, "password": password}
+    response = requests.post(url, json=payload)
+    return response.json()
     
     
 
@@ -167,7 +169,7 @@ def get_result(VIDEO_ID: str , FRAME_ID: str , SESSION_ID: str):
     video_name,frame_idx=map_keyframe(VIDEO_ID ,FRAME_ID)
     payload = {
         "item":video_name,
-        "frame": frame_idx,
+        "frame": str(frame_idx),
         "session": SESSION_ID
     }
     response = requests.get(url, json=payload)
@@ -228,5 +230,5 @@ def map_keyframe(video_name,key_frame_id):
   PATH_TO_FILE_MAP='./map-keyframes/'
   df=pd.read_csv(PATH_TO_FILE_MAP+video_name+'.csv')
   
-  return video_name+',',df.frame_idx[key_frame_id-1]
+  return video_name ,df.frame_idx[key_frame_id-1]
 
