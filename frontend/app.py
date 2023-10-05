@@ -80,6 +80,7 @@ def main() -> None:
 
     st.subheader("Query Results")
     img_result = utils.send_request(query, k, model_choice)
+    
 
     
     images_List ,image_names  = read_image(img_result['search_result'])

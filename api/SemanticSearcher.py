@@ -57,7 +57,7 @@ class searchForOpenClip:
         """
 
         tokenizer = open_clip.get_tokenizer(model_name)
-        text = tokenizer([text]).to(self.device)
+     
 
 
         with torch.no_grad(), torch.cuda.amp.autocast():
