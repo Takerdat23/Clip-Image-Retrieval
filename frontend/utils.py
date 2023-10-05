@@ -104,11 +104,22 @@ def start_sidebar() -> tuple[str, int, str]:
             if uploaded_image:
                 query = encode_image(uploaded_image.read())
                 st.image(uploaded_image, use_column_width=True, caption="Query Image")
-        st.title("Check the whole keyframes folder")
-        text_folder = st.text_input("Video folder", value="", placeholder="e.g L01_V006")
         
+
+        c3, c4 = st.columns(2)
+        video_folder= c3.text_input("Video folder", value="", placeholder="e.g L01_V006")
+     
+        image_file = c4.text_input("Image file", value="", placeholder="e.g  258")
+
+        if st.button("Submit"): 
+            response =  get_result(video_folder,int(image_file)  )
+            st.json(response)
+
+        
+       
+        st.write("Check a single folder")
         if st.button("Check folder"): 
-            images_List ,image_names    =   get_images(text_folder )
+            images_List ,image_names    =   get_images(video_folder )
    
 
 
@@ -127,23 +138,18 @@ def start_sidebar() -> tuple[str, int, str]:
                         with columns[j]:  # Use columns[j] to display images in each column
                             st.image(images_List[idx], use_column_width=True, caption=image_names[idx])
 
+        
+
 
 
 
         
-
-        st.title("FOR COMPETITION PURPOSE")
         
 
-        c3, c4 = st.columns(2)
-        video_folder= c3.text_input("Video folder", value="", placeholder="e.g L01_V006")
-     
-        image_file = c4.text_input("Image file", value="", placeholder="e.g  258")
+ 
+        
 
-
-        if st.button("Submit"): 
-            response =  get_result(video_folder,int(image_file)  )
-            st.json(response)
+        
         return query, k, model_choice
 def get_edited_result(query, model_choice, k = 100, image_file = "", video_folder= ""): 
     """Refined search using the clicked image.
