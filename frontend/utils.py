@@ -46,17 +46,17 @@ def get_images(image_folder: str):
     """get all the images in a single image folder """
     images = []
     image_names = []
-    IMAGE_KEYFRAME_PATH = "/mlcv/Databases/HCM_AIC23/ "  # Đường dẫn đến thư mục chứa keyframes
+    IMAGE_KEYFRAME_PATH = "/mlcv/Databases/HCM_AIC23"  # Đường dẫn đến thư mục chứa keyframes
     
  
     if int(image_folder[1:3])<=10:
-        video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-1','keyframes',image_folder)
+        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-1/keyframes/"+  image_folder
     elif 10 < int(image_folder[1:3]) <=20: 
-        video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-2','keyframes',image_folder)
+        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-2/keyframes/"+  image_folder
     elif 20 < int(image_folder[1:3]) <=36: 
-        video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-3','keyframes',image_folder)
+        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-3/keyframes/"+  image_folder
         
-    for image_file in os.listdir(video_folder):
+    for image_file in os.listdir(sorted(video_folder)):
 
         image_path = os.path.join(video_folder,image_file)
         image = Image.open(image_path)
@@ -64,26 +64,26 @@ def get_images(image_folder: str):
         image_names.append( image_folder + " "+ image_file )
         images.append(image)
 
-        
-        # keyframe_id= int(keyframe_id)
-        
-        # if os.path.exists(video_folder):
-        #     image_files = sorted(os.listdir(video_folder))
-
-
-        #     if keyframe_id < len(image_files):
-
-        #         image_file = image_files[keyframe_id]
-        #         image_path = os.path.join(video_folder, image_file)
-          
-        #         image = Image.open(image_path)
-
-        #         image_names.append( video_name + " "+ image_file)
-        #         images.append(image)
-        #     else:
-        #         print(f"Keyframe id {keyframe_id} is out of range for video {video_name}.")
 
     return images, image_names
+
+
+def Print_Images(images_List ,image_names): 
+    num_columns = 3  # Number of columns in the grid
+    col_count = len(images_List)
+
+
+    # Loop through the image_paths and display each image in a column
+    for i in range(0, col_count, num_columns):
+        columns = st.columns(num_columns)  # Create columns for the grid
+
+        for j in range(num_columns):
+            idx = i + j
+            if idx < col_count:
+                with columns[j]:  # Use columns[j] to display images in each column
+                    st.image(images_List[idx], use_column_width=True, caption=image_names[idx])
+
+
 
 
 
@@ -97,7 +97,7 @@ def start_sidebar() -> tuple[str, int, str]:
 
 
         if mode == "Text":
-            query = st.text_input("Query", value="", placeholder="enter your query")
+            query = st.text_input("Query", value="", placeholder="enter your query", key= 2)
         else:
             query = None
             uploaded_image = st.file_uploader("Query", type=["png", "jpg", "jpeg"])
@@ -119,37 +119,9 @@ def start_sidebar() -> tuple[str, int, str]:
        
         st.write("Check a single folder")
         if st.button("Check folder"): 
-            images_List ,image_names    =   get_images(video_folder )
+            images_List ,image_names = get_images(video_folder )
+            Print_Images(images_List ,image_names)
    
-
-
-    
-            num_columns = 3  # Number of columns in the grid
-            col_count = len(images_List)
-
-
-            # Loop through the image_paths and display each image in a column
-            for i in range(0, col_count, num_columns):
-                columns = st.columns(num_columns)  # Create columns for the grid
-
-                for j in range(num_columns):
-                    idx = i + j
-                    if idx < col_count:
-                        with columns[j]:  # Use columns[j] to display images in each column
-                            st.image(images_List[idx], use_column_width=True, caption=image_names[idx])
-
-        
-
-
-
-
-        
-        
-
- 
-        
-
-        
         return query, k, model_choice
 def get_edited_result(query, model_choice, k = 100, image_file = "", video_folder= ""): 
     """Refined search using the clicked image.
