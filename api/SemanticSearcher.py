@@ -55,19 +55,23 @@ class searchForOpenClip:
             k result
 
         """
-
+      
         tokenizer = open_clip.get_tokenizer(model_name)
-        text = tokenizer([text]).to(self.device)
+        text = tokenizer(text).to(self.device)
      
 
 
         with torch.no_grad(), torch.cuda.amp.autocast():
             text_features = self.model.encode_text(text)[0]
-            text_features /= text_features.norm(dim=-1, keepdim=True)
+       
+            
 
-        query_emb= text_features.detach().cpu().numpy()
+        
+        text_features /= np.linalg.norm(text_features, keepdims = True)
+        text_features = text_features.reshape(-1, 1).T
+        query_emb=  text_features.detach().cpu().numpy()
 
-        query_emb=query_emb[np.newaxis]
+
     
 
         _, I = self.index.search(query_emb, k)
@@ -92,7 +96,6 @@ class searchForOpenClip:
                                   "keyframe_id": idx,
                                   "score": distance})
         return search_result
-
 
 
 class SemanticSearcher:

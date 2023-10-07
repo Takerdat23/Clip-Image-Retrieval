@@ -69,6 +69,11 @@ def read_image(results: List[dict]) -> List[Image.Image]:
 def main() -> None:
     st.set_page_config(layout="wide")
     st.title("ELO@AIC Image Semantic Search")
+    #Specific_folder= st.text_input("Video folder", value="", placeholder="e.g L01_V006", key = 1)
+ 
+    #if st.button("Check folder"): 
+        #images_List ,image_names = utils.get_images(Specific_folder )
+        #utils.Print_Images(images_List ,image_names)
 
     query, k , model_choice = utils.start_sidebar()
 
