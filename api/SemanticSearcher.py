@@ -57,6 +57,7 @@ class searchForOpenClip:
         """
 
         tokenizer = open_clip.get_tokenizer(model_name)
+        text = tokenizer([text]).to(self.device)
      
 
 
@@ -65,6 +66,8 @@ class searchForOpenClip:
             text_features /= text_features.norm(dim=-1, keepdim=True)
 
         query_emb= text_features.detach().cpu().numpy()
+
+        query_emb=query_emb[np.newaxis]
     
 
         _, I = self.index.search(query_emb, k)
