@@ -42,49 +42,6 @@ def encode_image(image_bytes: bytes) -> str:
     return f"data:image/png;base64,{encoded_string}"
 
 
-def get_images(image_folder: str):
-    """get all the images in a single image folder """
-    images = []
-    image_names = []
-    IMAGE_KEYFRAME_PATH = "/mlcv/Databases/HCM_AIC23"  # Đường dẫn đến thư mục chứa keyframes
-    
- 
-    if int(image_folder[1:3])<=10:
-        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-1/keyframes/"+  image_folder
-    elif 10 < int(image_folder[1:3]) <=20: 
-        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-2/keyframes/"+  image_folder
-    elif 20 < int(image_folder[1:3]) <=36: 
-        video_folder=IMAGE_KEYFRAME_PATH + "/data-batch-3/keyframes/"+  image_folder
-        
-    for image_file in os.listdir(sorted(video_folder)):
-
-        image_path = os.path.join(video_folder,image_file)
-        image = Image.open(image_path)
-
-        image_names.append( image_folder + " "+ image_file )
-        images.append(image)
-
-
-    return images, image_names
-
-
-def Print_Images(images_List ,image_names): 
-    num_columns = 3  # Number of columns in the grid
-    col_count = len(images_List)
-
-
-    # Loop through the image_paths and display each image in a column
-    for i in range(0, col_count, num_columns):
-        columns = st.columns(num_columns)  # Create columns for the grid
-
-        for j in range(num_columns):
-            idx = i + j
-            if idx < col_count:
-                with columns[j]:  # Use columns[j] to display images in each column
-                    st.image(images_List[idx], use_column_width=True, caption=image_names[idx])
-
-
-
 
 
 def start_sidebar() -> tuple[str, int, str]:
@@ -93,7 +50,7 @@ def start_sidebar() -> tuple[str, int, str]:
         mode = c1.radio("Query Mode", ["Text", "Image"])
         k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=20)
 
-        model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14", "ViT-L/14@336px","ViT-g-14",  "ViT-bigG-14" ])
+        model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14"])
 
 
         if mode == "Text":
@@ -106,121 +63,12 @@ def start_sidebar() -> tuple[str, int, str]:
                 st.image(uploaded_image, use_column_width=True, caption="Query Image")
         
 
-        c3, c4 = st.columns(2)
-        video_folder= c3.text_input("Video folder", value="", placeholder="e.g L01_V006")
-     
-        image_file = c4.text_input("Image file", value="", placeholder="e.g  258")
-
-        if st.button("Submit"): 
-            response =  get_result(video_folder,int(image_file)  )
-            st.json(response)
-
+ 
         
        
-        st.write("Check a single folder")
-        if st.button("Check folder"): 
-            images_List ,image_names = get_images(video_folder )
-            Print_Images(images_List ,image_names)
-   
-        return query, k, model_choice
-def get_edited_result(query, model_choice, k = 100, image_file = "", video_folder= ""): 
-    """Refined search using the clicked image.
-
-    Parameters
-    ----------
-    query : str
-        the query
-    model_choice : str 
-        the clip model we want to use 
-    k : _type_
-        Number of images to return
-
-    Returns
-    -------
-    csv href link to download 
-    """
-    img_result = send_request(query, k, model_choice)
-   
-    video_names=[]
-    frame_idxs=[]
- 
-    for result in img_result['search_result']:
-      video_name,frame_idx=map_keyframe(result['video_name'],result['keyframe_id'])
-      video_names.append(video_name)
-      frame_idxs.append(frame_idx)
-    
-
-    frame_id = int(image_file)
-    print(frame_id)
-
-    #Lay 5 hinh ke tu idx 
-    keyframe_dir = "./KeyFrames"
-
-
        
    
-    
-    for i in range(5): 
-        Vid_id = video_folder[:3]
-        video_folder_name = "keyframes_"+ Vid_id+ "/"+ video_folder
-        video_folder = os.path.join(keyframe_dir, video_folder_name)
-        if ((frame_id + i)> len(os.listdir(video_folder)) ): 
-            break
-        video_name,frame_idx=map_keyframe(video_folder ,frame_id + i)
-
-        video_names[i]=video_name
-        frame_idxs[i]= frame_idx
-
-
-
-
-
-    dic={'vd_name':video_names,'fr_id':frame_idxs}
-    df=pd.DataFrame(dic)
-
-    csv = df.to_csv( index = None, header=False , sep=" ").encode('utf-8')
-
-    st.download_button(
-            "Press to Download",
-            csv,
-            "file.csv",
-            "text/csv",
-            key='download-csv'
-            )
-
-
-def get_session_id(account: str , password: str): 
-    """Send request to REST to get the session id."""
-    
-    url = "https://eventretrieval.one/api/v1/login"
-    payload = {"username": account, "password": password}
-    response = requests.post(url, json=payload)
-    return response.json()
-    
-    
-
-def get_result(VIDEO_ID: str , FRAME_ID: str ):
-    SUBMIT_URL = "https://eventretrieval.one"  # Replace with your actual SUBMIT_URL
-    item, frame = map_keyframe(VIDEO_ID, int(FRAME_ID))
-    
-    session =  get_session_id("eloaic", "Rahphe8h")["sessionId"]  # Replace with your session value
-    frame= str(frame)
-
-    URL = f"{SUBMIT_URL}/api/v1/submit?item={item}&frame={frame}&session={session}"
-
-    headers = {"Content-Type": "application/json"}
-
-    try:
-        response = requests.get(URL, headers=headers)
-        response.raise_for_status()  # Check for any HTTP errors
-        message = response.json()
-        st.json(message) 
-    except requests.exceptions.RequestException as error:
-        st.write("Error: request exception")
-    
-
-    return response.json()
-
+        return query, k, model_choice
 
 
 

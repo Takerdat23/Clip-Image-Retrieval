@@ -5,21 +5,16 @@ FROM python:3.10-slim-bullseye
 WORKDIR /app
 
 # Copying necessary files and directories
-COPY ./frontend .
+COPY ./frontend ./frontend
 
 #COPY ./KeyFrames ./KeyFrames 
 
 COPY ./map-keyframes ./map-keyframes
 
-# CMD ["ls", "-la"]
-
-# RUN mkdir -p ./KeyFrames
-
-# COPY  mlcv/Databases/HCM_AIC23/* ./KeyFrames
 
 
 # Installing dependencies
-RUN pip install -r ./requirements.txt
+RUN pip install -r ./frontend/requirements.txt
 
 
 
@@ -27,4 +22,4 @@ RUN pip install -r ./requirements.txt
 EXPOSE 8501
 
 # Running streamlit
-ENTRYPOINT ["streamlit", "run", "./app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "./frontend/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

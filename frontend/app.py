@@ -20,7 +20,7 @@ def extrac_name_file_img(key_fr_id,video_name):
 def read_image(results: List[dict]) -> List[Image.Image]:
     images = []
     image_names = []
-    IMAGE_KEYFRAME_PATH = "/mlcv/Databases/HCM_AIC23/"  # Đường dẫn đến thư mục chứa keyframes
+    IMAGE_KEYFRAME_PATH = "KeyFrames/"  # Đường dẫn đến thư mục chứa keyframes
     
        
 
@@ -29,12 +29,10 @@ def read_image(results: List[dict]) -> List[Image.Image]:
        
 
         video_name = res["video_name"]
-        if int(video_name[1:3])<=10:
-           video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-1','keyframes',video_name)
-        elif 10 < int(video_name[1:3]) <=20: 
-            video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-2','keyframes',video_name)
-        elif 20 < int(video_name[1:3]) <=36: 
-            video_folder=os.path.join(IMAGE_KEYFRAME_PATH,'data-batch-3','keyframes',video_name)
+        folder_name = "keyframes_"+ video_name[:3]
+     
+       
+        video_folder=os.path.join(IMAGE_KEYFRAME_PATH,folder_name, video_name)
         
         img_name=extrac_name_file_img(str(res['keyframe_id']),res['video_name'])+'.jpg'
 

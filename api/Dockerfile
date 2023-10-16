@@ -10,8 +10,10 @@ COPY ./environment.yml .
 # Copying api folder to the image
 COPY ./api ./api
 
-#Copying embeddings directory
 COPY ./embeddings ./embeddings
+
+#Copying embeddings directory
+
 
 
 # Dealing with CondaHTTPError: HTTP 000 CONNECTION FAILED for url <https://repo.anaconda.com/pkgs/main/linux-64/current_repodata.json>

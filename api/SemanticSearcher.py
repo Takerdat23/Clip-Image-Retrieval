@@ -26,7 +26,7 @@ class TextEmbedding():
             text_features = self.model.encode_text(text)[0]
             text_features /= text_features.norm(dim=-1, keepdim=True)
         return text_features.detach().cpu().numpy()
-    
+# use this class if you using a openclip libary model
 class searchForOpenClip:
     """Object that performs semantic search on images and text
 
