@@ -8,10 +8,15 @@ from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
+import open_clip
 
 def load_model(model_id: str) -> tuple[CLIPModel, CLIPProcessor]:
     model = CLIPModel.from_pretrained(model_id)
     processor = CLIPProcessor.from_pretrained(model_id)
+    return model, processor
+
+def load_model_open(model_id: str, pretrain: str) -> tuple[CLIPModel, CLIPProcessor]:
+    model,_, processor = open_clip.create_model_and_transforms(model_id, pretrained=pretrain)
     return model, processor
 
 def fetch_image(url: str) -> tuple[str, Image.Image]:

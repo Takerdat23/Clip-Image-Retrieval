@@ -42,15 +42,17 @@ def faiss_indexing(db: list, feature_dimension: int) -> faiss.IndexFlatL2:
 
 
 # Load database from embeddings
-def Database(PATH_TO_CLIPFEATURES: str)-> List[Tuple[str, int, np.ndarray],]:
-  data_base=[]
-  for name_file_feature in tqdm(sorted(os.listdir(PATH_TO_CLIPFEATURES))):
-    vid_name=name_file_feature.split('.')[0]
-    features=np.load(os.path.join(PATH_TO_CLIPFEATURES,name_file_feature))
-    for idx,feat in enumerate(features,1):
-      instance=(vid_name,idx,feat)
-      data_base.append(instance)
-  return data_base
+def Database(PATH_TO_CLIPFEATURES: str) -> List[Tuple[str, int, np.ndarray]]:
+    data_base = []
+    for name_file_feature in tqdm(sorted(os.listdir(PATH_TO_CLIPFEATURES))):
+        if name_file_feature.endswith('.npy'):
+            vid_name = name_file_feature.split('.')[0]
+            features = np.load(os.path.join(PATH_TO_CLIPFEATURES, name_file_feature))
+            for idx, feat in enumerate(features, 1):
+                instance = (vid_name, idx, feat)
+                data_base.append(instance)
+    return data_base
+
 
 
 app = FastAPI(title="ELO@AIC Image Semantic Search")

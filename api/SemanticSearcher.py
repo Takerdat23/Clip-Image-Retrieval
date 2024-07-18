@@ -8,8 +8,10 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
-from api.utils import load_model, index_to_url
-import open_clip
+from api.utils import load_model, index_to_url, load_model_open
+from open_clip import create_model_from_pretrained, get_tokenizer
+
+
 
 
 class TextEmbedding():
@@ -41,41 +43,85 @@ class searchForOpenClip:
     """
     def __init__(self, model_id: str, pretrain: str , index: faiss.Index=None, db: list=[]) -> None:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_id, pretrained=pretrain,device=self.device)
-        self.model.eval()
-        self.index = index
-        self.database = db
-    def __call__(self, text: str,model_name: str , k : int ) -> np.ndarray:
-        """ Encode the text query
-        model_id : str
-            open clip model 
-        text : str 
-            text query
-        k: int 
-            k result
-
-        """
-      
-        tokenizer = open_clip.get_tokenizer(model_name)
-        text = tokenizer(text).to(self.device)
-     
-
-
-        with torch.no_grad(), torch.cuda.amp.autocast():
-            text_features = self.model.encode_text(text)[0]
-       
-            
 
         
-        text_features /= np.linalg.norm(text_features, keepdims = True)
-        text_features = text_features.reshape(-1, 1).T
-        query_emb=  text_features.detach().cpu().numpy()
+        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_id, pretrained=pretrain,device=self.device)
+        self.model.eval()
+        self.model_name = model_id
+        self.index = index
+        self.database = db
+    
 
+    def process(self, batch: list[Union[Image.Image, str]]) -> np.array:
+        """Process a batch of images or text to extract their embeddings
+
+        Parameters
+        ----------
+        batch : Union[list[Image.Image], list[str]]
+            Batch containing images or text
+
+        Returns
+        -------
+        np.array
+            Resulting batch embeddings
+        """
+        self.model.to(self.device)
+        mode = self._infer_type(batch)
+        if mode=="visual":
+            processed_images = self.processor(images=batch, return_tensors="pt").to(self.device)
+            return self.model.get_image_features(**processed_images).detach().cpu().numpy()
+            #image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+
+            #with torch.no_grad(), torch.cuda.amp.autocast():
+              #image_features = self.model.encode_image(image_input)[0]
+              #image_features /= image_features.norm(dim=-1, keepdim=True)
+        elif mode=="text":
+            # print("batches", batch)
+            # text_inputs = open_clip.tokenize(batch).to(self.device)
+        
+            # with torch.no_grad():
+            #     print("text_inputs",text_inputs.shape )
+            #     text_feature = self.model.encode_text(text_inputs)
+            #     #print(text_feature.shape)
+            #     text_feature /= text_feature.norm(dim=-1, keepdim=True)
+            
+            # return text_feature.detach().cpu().numpy()
+
+            tokenizer = open_clip.get_tokenizer(self.model_name)
+            text = tokenizer(batch).to(self.device)
+
+
+            with torch.no_grad(), torch.cuda.amp.autocast():
+                text_features = self.model.encode_text(text)[0]
+                text_features /= text_features.norm(dim=-1, keepdim=True)
+                text_features = text_features.unsqueeze(0)
+            return text_features.detach().cpu().numpy()
 
     
 
-        _, I = self.index.search(query_emb, k)
-        I = I.tolist()
+    def __call__(self, query: list[Union[Image.Image, str]], k: int=5) -> list[str]:
+        """Perform a semantic search on a batch of images or text
+
+        Parameters
+        ----------
+        query : Union[list[Image.Image], list[str]]
+            THe input query used to perform the search
+        k : int, optional
+            Number of items return from query, by default 5
+
+        Returns
+        -------
+        np.array
+            An array containing the indexes of the k most similar items
+        """
+        # Query embedding
+        if not isinstance(query, list):
+            query = [query]
+        query_emb = self.process(query)
+        query_emb /= np.linalg.norm(query_emb)
+        # Getting Similarities
+        #I: index
+
 
         measure = self.index.search(query_emb, k)
         #tuple of two arrays distance , index
@@ -96,6 +142,22 @@ class searchForOpenClip:
                                   "keyframe_id": idx,
                                   "score": distance})
         return search_result
+    
+    @staticmethod
+    def _infer_type(x: list[Union[Image.Image, str]]) -> str:
+        """Infers the type of the input batch
+
+        Parameters
+        ----------
+        x : Union[list[Image.Image], list[str]]
+            Input batch
+
+        Returns
+        -------
+        str
+            Type of the input batch
+        """
+        return "visual" if isinstance(x[0], Image.Image) else "text"
 
 
 class SemanticSearcher:
