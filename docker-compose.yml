@@ -30,7 +30,6 @@ services:
       - 8501:8501
     volumes:
       - ./frontend:/app/frontend
-      - D:/Github/github2/Clip-Image-Retrieval/KeyFrames:/app/KeyFrames
     depends_on:
       - backend-api
     networks:
