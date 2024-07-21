@@ -9,7 +9,7 @@ import pandas as pd
 from PIL import Image
 
 from api.utils import load_model, index_to_url, load_model_open
-from open_clip import create_model_from_pretrained, get_tokenizer
+from open_clip import create_model_from_pretrained, get_tokenizer, create_model_and_transforms
 
 
 
@@ -17,7 +17,7 @@ from open_clip import create_model_from_pretrained, get_tokenizer
 class TextEmbedding():
     def __init__(self,model_name,pretrain):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_name, pretrained=pretrain,device=self.device)
+        self.model,_, self.preprocess = create_model_from_pretrained(model_name, pretrained=pretrain,device=self.device)
         self.model.eval()
     def __call__(self, text: str,model_name) -> np.ndarray:
         tokenizer = open_clip.get_tokenizer(model_name)
@@ -45,7 +45,7 @@ class searchForOpenClip:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         
-        self.model,_, self.preprocess = open_clip.create_model_and_transforms(model_id, pretrained=pretrain,device=self.device)
+        self.model,_, self.preprocess = create_model_and_transforms(model_id, pretrained=pretrain,device=self.device)
         self.model.eval()
         self.model_name = model_id
         self.index = index
@@ -87,7 +87,7 @@ class searchForOpenClip:
             
             # return text_feature.detach().cpu().numpy()
 
-            tokenizer = open_clip.get_tokenizer(self.model_name)
+            tokenizer = get_tokenizer(self.model_name)
             text = tokenizer(batch).to(self.device)
 
 

@@ -8,6 +8,7 @@ from PIL import Image
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, conlist
 from api import SemanticSearcher
+from api.BLIPSearcher import searchForBLIP
 import os
 import glob
 import numpy as np
@@ -63,23 +64,24 @@ def load_searcher() -> None:
  
     
    
-    db32 = Database("./embeddings/clip-features-vit-b32/")
-    db14 = Database("./embeddings/clip_fea_L14_Tuan/")
-    #db14_336 = Database("./embeddings/clip_fea_L14_@336px_TUAN/")
+    db32 = Database("./embeddings/blip2_feature_extractor-ViTG/")
+    db14 = Database("./embeddings/blip2_image_text_matching-coco/")
+    # db14_336 = Database("./embeddings/ViT-bigG-14-CLIPA-336-datacomp1b/")
 
     #load features into databases
-    index_32 = faiss_indexing(db32, 512)
+    index_32 = faiss_indexing(db32, 768)
     index_14 = faiss_indexing(db14, 768)
-    #index_14_336 = faiss_indexing(db14_336 , 768)
+    # index_14_336 = faiss_indexing(db14_336 , 1280)
 
     global searcher32
     global searcher14
-    global searcher14336
-    global searcher14g_La
-    global searcher14G_La
-    searcher32 = SemanticSearcher("openai/clip-vit-base-patch32", index_32, db32)
-    searcher14= SemanticSearcher("openai/clip-vit-large-patch14", index_14, db14)
-    #searcher14336= SemanticSearcher("openai/clip-vit-large-patch14-336", index_14_336, db14_336)
+    # global searcher14336
+    # global searcher14g_La
+    # global searcher14G_La
+
+    searcher32 = searchForBLIP("blip2_feature_extractor", "pretrain", index_32, db32)
+    searcher14= searchForBLIP("blip2_image_text_matching", "coco", index_14, db14)
+    # searcher14336= searchForOpenClip("ViT-bigG-14-CLIPA-336", "datacomp1b", index_14_336, db14_336)
  
 
 
@@ -103,12 +105,12 @@ def search(query_batch: Query) -> SearchResult:
         ]
     elif not isinstance(query[0], str):
         HTTPException(status_code=400, detail="Query must be a list of strings or base64 encoded images")
-    if model == "ViT-BigG14":
-        result = searcher32(query, k)
+    if model == "Blip2-Coco":
+        result = searcher14(query, k)
     elif model == "Blip2-Coco":
         result = searcher14(query, k)
     elif model == "Blip2-ViTG":
-        result = searcher14336(query, k)
+        result = searcher32(query, k)
   
     return SearchResult(search_result = result)
 

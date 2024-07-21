@@ -61,7 +61,7 @@ class searchForBLIP:
         elif mode=="text":
       
 
-            text_input = self.txt_processors["eval"](batch)
+            text_input = self.txt_processors["eval"](batch[0])
 
             sample = {"text_input": [text_input]}
             with torch.no_grad(), torch.cuda.amp.autocast():
