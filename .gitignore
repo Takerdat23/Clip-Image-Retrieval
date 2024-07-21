@@ -2,3 +2,5 @@ KeyFrames
 embeddings
 config
 docker-compose
+api/__pycache__
+frontend/__pycache__
