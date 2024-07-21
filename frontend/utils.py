@@ -50,7 +50,7 @@ def start_sidebar() -> tuple[str, int, str]:
         mode = c1.radio("Query Mode", ["Text", "Image"])
         k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=20)
 
-        model_choice = st.selectbox("Select a model:", ["ViT-bigG-14-CLIPA-336", "ViT-L/14"])
+        model_choice = st.selectbox("Select a model:", ["ViT-BigG14", "Blip2-Coco", "Blip2-ViTG"])
 
 
         if mode == "Text":

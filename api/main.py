@@ -103,11 +103,11 @@ def search(query_batch: Query) -> SearchResult:
         ]
     elif not isinstance(query[0], str):
         HTTPException(status_code=400, detail="Query must be a list of strings or base64 encoded images")
-    if model == "ViT-B/32":
+    if model == "ViT-BigG14":
         result = searcher32(query, k)
-    elif model == "ViT-L/14":
+    elif model == "Blip2-Coco":
         result = searcher14(query, k)
-    elif model == "ViT-L/14@336px":
+    elif model == "Blip2-ViTG":
         result = searcher14336(query, k)
   
     return SearchResult(search_result = result)
