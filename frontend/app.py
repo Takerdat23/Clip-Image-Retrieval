@@ -20,7 +20,7 @@ def extrac_name_file_img(key_fr_id,video_name):
 def read_image(results: List[dict]) -> List[Image.Image]:
     images = []
     image_names = []
-    IMAGE_KEYFRAME_PATH = "KeyFrames/"  # Đường dẫn đến thư mục chứa keyframes
+    IMAGE_KEYFRAME_PATH = "/app/KeyFrames"  # Đường dẫn đến thư mục chứa keyframes
     
        
 

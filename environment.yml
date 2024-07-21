@@ -253,4 +253,5 @@ dependencies:
     - zipp==3.12.1
     - gdown
     - open_clip_torch
+    - salesforce-lavis
 prefix: /home/eduardo/anaconda3/envs/semantic

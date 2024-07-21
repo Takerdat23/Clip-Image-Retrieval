@@ -27,11 +27,11 @@ def fetch_image_bytes(url: str) -> bytes:
 def send_request(query: str, k: int, model_choice: str) -> list[str]:
     """Send request to backend and return list of image URLs."""
     try:
-        url = "http://localhost:8000/search"
+        url = "http://35.223.182.198:8000/search"
         payload = {"query": [query], "k": k, "model": model_choice}
         response = requests.post(url, json=payload)
     except:
-        url = "http://backend-api:8000/search"
+        url = "http://35.223.182.198:8000/search"
         payload = {"query": [query], "k": k, "model": model_choice}
         response = requests.post(url, json=payload)
     return response.json()
@@ -50,7 +50,7 @@ def start_sidebar() -> tuple[str, int, str]:
         mode = c1.radio("Query Mode", ["Text", "Image"])
         k = c2.slider("Number of Images", min_value=1, max_value= 100, step=1, value=20)
 
-        model_choice = st.selectbox("Select a model:", ["ViT-B/32", "ViT-L/14"])
+        model_choice = st.selectbox("Select a model:", ["ViT-bigG-14-CLIPA-336", "ViT-L/14"])
 
 
         if mode == "Text":
