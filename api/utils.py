@@ -9,6 +9,13 @@ import pandas as pd
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 import open_clip
+import numpy as np
+import nltk
+nltk.download('punkt')
+
+def split_paragraph_into_sentences(paragraph):
+    sentences = nltk.sent_tokenize(paragraph)
+    return sentences
 
 def load_model(model_id: str) -> tuple[CLIPModel, CLIPProcessor]:
     model = CLIPModel.from_pretrained(model_id)
@@ -102,3 +109,70 @@ class ImageBatchGenerator:
             raise StopIteration
         return {"images": images, "urls": urls}
     
+
+
+def cumargmax(a):
+    m = np.maximum.accumulate(a)
+    x = np.arange(a.shape[0])
+    x[1:] *= m[:-1] < m[1:]
+    np.maximum.accumulate(x, axis=0, out=x)
+    return x
+
+def get_best_matched_pair(pairwise_distance):
+  # pairwise_distance: (#queries, #frame)
+
+  num_query, num_frame = pairwise_distance.shape
+
+  score = np.zeros(num_frame)
+  trace = np.zeros_like(pairwise_distance, dtype="int")
+
+  for i in range(num_query):
+    trace[i] = cumargmax(score)
+    score = np.maximum.accumulate(score) + pairwise_distance[i]
+
+  best_score = np.max(score)
+
+  final_trace = [np.argmax(score)]
+
+  for t in trace[1:][::-1]:
+    final_trace.append(t[final_trace[-1]])
+
+  return best_score, final_trace[::-1]
+
+
+def fused_query_search(query_arr, db, topk=10):
+    measure = []
+    for ins_id, instance in enumerate(db):
+        video_name, feat_arr = instance
+
+        if feat_arr.shape[0] == 0:
+            continue
+
+        # Calculate pairwise distances
+        pairwise_distance = np.exp(query_arr @ feat_arr.T)
+
+        # Fuse two query distances
+        distance = np.log(pairwise_distance.mean(0))
+
+        for i in range(len(distance)):
+            measure.append((ins_id, video_name, [i+1], distance[i]))
+
+    # Sort results by distance in descending order
+    measure = sorted(measure, key=lambda x: x[-1], reverse=True)
+
+    # Prepare top K results
+    search_result = []
+    for instance in measure[:topk]:
+        ins_id, video_name, matched_ids, distance = instance
+
+        for i in matched_ids:
+            search_result.append({
+                "video_name": video_name,
+                "keyframe_id": i,
+                "score": float(distance)  # Convert to Python float
+            })
+
+    return search_result
+
+
+

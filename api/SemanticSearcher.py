@@ -7,12 +7,62 @@ import faiss
 import numpy as np
 import pandas as pd
 from PIL import Image
-
-from api.utils import load_model, index_to_url, load_model_open
+from api.utils import *
+import open_clip
 from open_clip import create_model_from_pretrained, get_tokenizer, create_model_and_transforms
 
+def custom_score(results, top_k):
+    """
+    Custom scoring function to rank images based on multiple criteria.
+
+    Args:
+        results (list of dict): List of results where each result is a dictionary
+                                containing 'video_name', 'keyframe_id', and 'score'.
+        top_k (int): Number of top results to return.
+
+    Returns:
+        list of dict: Top K results based on custom scoring.
+    """
+
+    WEIGHT_FAISS_SCORE = 0.6
+    WEIGHT_SAME_VIDEO = 0.3
+
+    # Convert results to numpy arrays for easier processing
+    scores = np.array([res['score'] for res in results], dtype=float)
+    keyframe_ids = np.array([res['keyframe_id'] for res in results], dtype=float)
+    video_names = np.array([res['video_name'] for res in results])
+
+    # Normalize FAISS scores to range [0, 1]
+    faiss_scores_normalized = (scores - scores.min()) / (scores.max() - scores.min())
 
 
+    # Calculate same video scores
+    same_video_matrix = (video_names[:, None] == video_names[None, :]).astype(float)
+    same_video_scores = same_video_matrix.sum(axis=1) - 1  # subtract 1 to exclude self-match
+
+    # Normalize same video scores to range [0, 1]
+    same_video_scores_normalized = (same_video_scores - same_video_scores.min()) / (
+        same_video_scores.max() - same_video_scores.min())
+
+    # Calculate final scores based on weights
+    final_scores = (WEIGHT_FAISS_SCORE * faiss_scores_normalized +
+                    WEIGHT_SAME_VIDEO * same_video_scores_normalized)
+
+    # Combine results with final scores
+    combined_results = [{
+        'video_name': res['video_name'],
+        'keyframe_id': int(res['keyframe_id']),
+        'faiss_score': float(res['score']),  # Convert to Python float
+        'final_score': float(final_scores[i])  # Convert to Python float
+    } for i, res in enumerate(results)]
+
+    # Sort results based on final scores in descending order
+    sorted_results = sorted(combined_results, key=lambda x: x['final_score'], reverse=True)
+
+    # Return top K results
+    return sorted_results[:top_k]
+
+# my search engine 
 
 class TextEmbedding():
     def __init__(self,model_name,pretrain):
@@ -28,6 +78,9 @@ class TextEmbedding():
             text_features = self.model.encode_text(text)[0]
             text_features /= text_features.norm(dim=-1, keepdim=True)
         return text_features.detach().cpu().numpy()
+
+
+
 # use this class if you using a openclip libary model
 class searchForOpenClip:
     """Object that performs semantic search on images and text
@@ -50,6 +103,7 @@ class searchForOpenClip:
         self.model_name = model_id
         self.index = index
         self.database = db
+        
     
 
     def process(self, batch: list[Union[Image.Image, str]]) -> np.array:
@@ -76,16 +130,21 @@ class searchForOpenClip:
               #image_features = self.model.encode_image(image_input)[0]
               #image_features /= image_features.norm(dim=-1, keepdim=True)
         elif mode=="text":
-            # print("batches", batch)
-            # text_inputs = open_clip.tokenize(batch).to(self.device)
-        
-            # with torch.no_grad():
-            #     print("text_inputs",text_inputs.shape )
-            #     text_feature = self.model.encode_text(text_inputs)
+           
+            # tokenizer = get_tokenizer(self.model_name)
+            # text = tokenizer(batch).to(self.device)
+           
+
+            # with torch.no_grad(), torch.cuda.amp.autocast():
+            #     text_features = self.model.encode_text(text)
             #     #print(text_feature.shape)
-            #     text_feature /= text_feature.norm(dim=-1, keepdim=True)
-            
-            # return text_feature.detach().cpu().numpy()
+            #     text_features /= text_features.norm(dim=-1, keepdim=True)
+
+            #     # text_feature = proj_model.query_proj(text_feature)
+
+            #     # text_feature = F.normalize(text_feature, dim=-1)
+
+            # return text_features.detach().cpu().numpy()
 
             tokenizer = get_tokenizer(self.model_name)
             text = tokenizer(batch).to(self.device)
@@ -115,33 +174,101 @@ class searchForOpenClip:
             An array containing the indexes of the k most similar items
         """
         # Query embedding
+        # if not isinstance(query, list):
+        #     query = [query]
+        # query_emb = self.process(query)
+        # query_emb /= np.linalg.norm(query_emb)
+        # # Getting Similarities
+        # #I: index
+
+
+        # measure = self.index.search(query_emb, k)
+        # #tuple of two arrays distance , index
+
+        # measure  = np.reshape(np.array(measure), newshape=(2, k)).T
+        # # sort the result
+        # sorted_indices = np.argsort(measure[:, 0])
+        # measure  = measure[sorted_indices]
+
+        # '''Trả về top K kết quả'''
+        # search_result = []
+        # for instance in measure:
+        #     distance, ins_id = instance
+        #     ins_id = int(ins_id)
+        #     video_name, idx = self.database[ins_id][0], self.database[ins_id][1]
+
+        #     search_result.append({"video_name": video_name,
+        #                           "keyframe_id": idx,
+        #                           "score": distance})
+
+
+        ##### MY CUSTOM SEARCH ENGINE
+
         if not isinstance(query, list):
-            query = [query]
-        query_emb = self.process(query)
-        query_emb /= np.linalg.norm(query_emb)
-        # Getting Similarities
-        #I: index
+             query = [query]
+        
+        text_query = split_paragraph_into_sentences(query[0])
+    
+        # Embed each query
+        text_feat_arr = np.vstack([self.process(t) for t in text_query])
+
+        # Normalize the embeddings
+        text_feat_arr = text_feat_arr / np.linalg.norm(text_feat_arr, axis=1, keepdims=True)
+
+        # Perform FAISS search for all queries in a batch
+        distances, indices = self.index.search(text_feat_arr, k)
+
+        # Flatten the distances and indices arrays
+        distances = distances.flatten()
+        indices = indices.flatten()
+
+        # Collect the results into structured numpy arrays
+        video_names = np.array([self.database[idx][0] for idx in indices])
+        keyframe_ids = np.array([self.database[idx][1] for idx in indices])
+
+        # Create a structured array to hold the results
+        dtype = [('video_name', 'U50'), ('keyframe_id', 'int32'), ('score', 'float64')]
+        results_array = np.zeros(len(distances), dtype=dtype)
+        results_array['video_name'] = video_names
+        results_array['keyframe_id'] = keyframe_ids
+        results_array['score'] = distances.astype('float64') 
+
+        # Calculate mean scores in a vectorized way
+        unique_keys, unique_indices, unique_counts = np.unique(
+            results_array[['video_name', 'keyframe_id']], return_inverse=True, return_counts=True
+        )
+        sum_scores = np.bincount(unique_indices, weights=results_array['score'])
+        mean_scores = sum_scores / unique_counts
+
+        # Create a list of results with mean scores
+        updated_search_result = []
+        for i, key in enumerate(unique_keys):
+            video_name, keyframe_id = key
+            updated_search_result.append({
+                "video_name": video_name,
+                "keyframe_id": int(keyframe_id),
+                "score": float(mean_scores[i])
+            })
+
+        # Apply custom scoring to the aggregated results
+        final_result = custom_score(updated_search_result, top_k= k)
+        return final_result
 
 
-        measure = self.index.search(query_emb, k)
-        #tuple of two arrays distance , index
 
-        measure  = np.reshape(np.array(measure), newshape=(2, k)).T
-        # sort the result
-        sorted_indices = np.argsort(measure[:, 0])
-        measure  = measure[sorted_indices]
+        ### FUSED SEARCH ENGINE 
 
-        '''Trả về top K kết quả'''
-        search_result = []
-        for instance in measure:
-            distance, ins_id = instance
-            ins_id = int(ins_id)
-            video_name, idx = self.database[ins_id][0], self.database[ins_id][1]
+        # if not isinstance(query, list):
+        #      query = [query]
+        
+        # text_query = query[0].split(',')
+        
+     
+        # text_feat_arr = np.vstack([self.process(t) for t in text_query])
 
-            search_result.append({"video_name": video_name,
-                                  "keyframe_id": idx,
-                                  "score": distance})
-        return search_result
+        # search_result = fused_query_search(text_feat_arr, self.database, k)
+
+        # return search_result
     
     @staticmethod
     def _infer_type(x: list[Union[Image.Image, str]]) -> str:

@@ -254,4 +254,5 @@ dependencies:
     - gdown
     - open_clip_torch
     - salesforce-lavis
+    - nltk
 prefix: /home/eduardo/anaconda3/envs/semantic

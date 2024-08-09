@@ -6,14 +6,18 @@ import faiss
 import pandas as pd
 from PIL import Image
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, conlist
 from api import SemanticSearcher
 from api.BLIPSearcher import searchForBLIP
+from fastapi.encoders import jsonable_encoder
 import os
 import glob
 import numpy as np
 from tqdm import tqdm
 from  api.SemanticSearcher import searchForOpenClip
+
+
 
 
 class Query(BaseModel):
@@ -49,14 +53,34 @@ def Database(PATH_TO_CLIPFEATURES: str) -> List[Tuple[str, int, np.ndarray]]:
         if name_file_feature.endswith('.npy'):
             vid_name = name_file_feature.split('.')[0]
             features = np.load(os.path.join(PATH_TO_CLIPFEATURES, name_file_feature))
+         
             for idx, feat in enumerate(features, 1):
                 instance = (vid_name, idx, feat)
                 data_base.append(instance)
     return data_base
 
+def video_database(PATH_TO_CLIPFEATURES: str):
+  data_base=[]
+  for name_file_feature in tqdm(sorted(os.listdir(PATH_TO_CLIPFEATURES))):
+    if name_file_feature.endswith('.npy'):
+        vid_name=name_file_feature.split('.')[0]
+        features=np.load(os.path.join(PATH_TO_CLIPFEATURES,name_file_feature))
+
+        instance=(vid_name,features)
+        data_base.append(instance)
+
+  return data_base
 
 
 app = FastAPI(title="ELO@AIC Image Semantic Search")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 
 @app.on_event("startup")
@@ -65,23 +89,28 @@ def load_searcher() -> None:
     
    
     db32 = Database("./embeddings/blip2_feature_extractor-ViTG/")
-    db14 = Database("./embeddings/blip2_image_text_matching-coco/")
-    # db14_336 = Database("./embeddings/ViT-bigG-14-CLIPA-336-datacomp1b/")
+    db14 = Database("./embeddings/ViT-H-14-378-quickgelu-dfn5b/")
+    db14_336 = Database("./embeddings/ViT-bigG-14-CLIPA-336-datacomp1b/")
 
     #load features into databases
+    # index_32 = None
+    # index_14 = None
+    # index_14_336 = None
+
+
     index_32 = faiss_indexing(db32, 768)
-    index_14 = faiss_indexing(db14, 768)
-    # index_14_336 = faiss_indexing(db14_336 , 1280)
+    index_14 = faiss_indexing(db14, 1024)
+    index_14_336 = faiss_indexing(db14_336 , 1280)
 
     global searcher32
     global searcher14
-    # global searcher14336
+    global searcher14336
     # global searcher14g_La
     # global searcher14G_La
 
     searcher32 = searchForBLIP("blip2_feature_extractor", "pretrain", index_32, db32)
-    searcher14= searchForBLIP("blip2_image_text_matching", "coco", index_14, db14)
-    # searcher14336= searchForOpenClip("ViT-bigG-14-CLIPA-336", "datacomp1b", index_14_336, db14_336)
+    searcher14= searchForOpenClip("ViT-H-14-378-quickgelu", "dfn5b", index_14, db14)
+    searcher14336 = searchForOpenClip("ViT-bigG-14-CLIPA-336", "datacomp1b", index_14_336, db14_336)
  
 
 
@@ -105,13 +134,13 @@ def search(query_batch: Query) -> SearchResult:
         ]
     elif not isinstance(query[0], str):
         HTTPException(status_code=400, detail="Query must be a list of strings or base64 encoded images")
-    if model == "Blip2-Coco":
-        result = searcher14(query, k)
-    elif model == "Blip2-Coco":
+    if model == "ViT-bigG-14":
+        result = searcher14336(query, k)
+    elif model == "ViT 5b":
         result = searcher14(query, k)
     elif model == "Blip2-ViTG":
         result = searcher32(query, k)
-  
+
     return SearchResult(search_result = result)
 
 
